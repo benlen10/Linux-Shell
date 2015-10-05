@@ -243,10 +243,20 @@ void batchMode(int argc, char *argv[]) {
             exit(1);
         }
         char *str;
+        char * strTrunc = (char*)malloc(512);
         size_t size;
         ssize_t chars;
         while ((chars = getline(&str, &size, open)) != -1) {
-            write(STDOUT_FILENO, str, strlen(str));
+        	/*if line is greater than 512 bytes then truncate to 512 bytes and execute*/
+        	/*int len = strlen(str);
+			if(len>512){
+				strncpy(strTrunc,str,512);
+				strncpy(str,strTrunc,512);
+				str = strTrunc;
+				printf("str -- %s\n",str);
+			}*/
+
+			write(STDOUT_FILENO, str, strlen(str));
             checkForExit(str);
             if (str[chars - 1] == '\n') {
                 str[chars - 1] = '\0';
