@@ -33,7 +33,9 @@ void batchMode(int argc, char *argv[]);
 int rear = -1, front = -1;
 char *queue[SIZE];
 int counter = 1;
-
+/*
+ * TODO exit after all printErrors
+ */
 void checkForExit(char *response) {
 
     char exitstr[] = "exit\n";
@@ -248,13 +250,14 @@ void batchMode(int argc, char *argv[]) {
         ssize_t chars;
         while ((chars = getline(&str, &size, open)) != -1) {
         	/*if line is greater than 512 bytes then truncate to 512 bytes and execute*/
-        	/*int len = strlen(str);
+        	int len = strlen(str);
+
 			if(len>512){
 				strncpy(strTrunc,str,512);
 				strncpy(str,strTrunc,512);
 				str = strTrunc;
-				printf("str -- %s\n",str);
-			}*/
+				str[512]='\n';
+			}
 
 			write(STDOUT_FILENO, str, strlen(str));
             checkForExit(str);
@@ -314,9 +317,16 @@ int splitAndExecute(char *input, bool redirectionExists) {
     token = strtok(input, delim);//this will store the part before the redirection
     redirect_file = strtok(NULL, delim1);//this will store the part after the redirection symbol
     extraRedirect = strtok(NULL, delim1);//if there are more than 2 files after the redirection
+    //if there is not file after the redirection
+    if(redirectionExists && redirect_file == NULL){
+    	printError();
+    	return 1;
+    }
 
+    //if there is more than one file after the redirection
     if (extraRedirect != NULL) {
         printError();
+        return 1;
     }
     if (redirectionExists == false) {
         splitBySpace(inputCopy, argv);
@@ -343,7 +353,11 @@ int splitAndExecute(char *input, bool redirectionExists) {
     } else if (rc == 0) {
         if (redirection_flag == true) {
             close(STDOUT_FILENO);
-            open(redirect_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
+            int ret = open(redirect_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
+            if(ret ==-1){
+            	printError();
+            	return 1;
+            }
         }
         execvp(argv[0], argv);
         printError();
