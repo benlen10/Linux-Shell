@@ -72,7 +72,7 @@ int checkForExcl(char *token, bool redirectionExists) {
             c++;
         }
         num = atoi(n);
-        //printf("%d=num",num);
+
         if (strlen(token) == 1) {
             printError();
             return 1;
@@ -86,6 +86,10 @@ int checkForExcl(char *token, bool redirectionExists) {
             no_of_rec = rear - front + 1;
         }
 
+        /*num will be 0 if the user has enetered only '!' . in this case we need tno execute the last command in the history*/
+        if(num ==0){
+        	num = counter+no_of_rec-1;
+        }
 
         if (num < counter) {
             printError();
@@ -111,14 +115,16 @@ int checkForExcl(char *token, bool redirectionExists) {
         }
         else {
             index = num - counter;
+           //printf("calling split correctly . ln 124 cmd %s", queue[index]);
             splitAndExecute(queue[index], redirectionExists);
         }
 
         return 1;
 
     }
-    else
+    else{
         return 0;
+    }
     return 0;
 }
 
@@ -227,7 +233,12 @@ void batchMode(int argc, char *argv[]) {
         char *batchFile[2];
         close(STDIN_FILENO);
         FILE *open = fopen(argv[1], "r");
-        if (open < 0) {
+      	/*if the file does not exist then throw an error and exit*/
+				if(open == NULL ){
+            printError();
+            exit(1);
+				}
+				if (open < 0) {
             printError();
             exit(1);
         }
@@ -242,7 +253,23 @@ void batchMode(int argc, char *argv[]) {
                 --chars;
             }
 
-            splitAndExecute(str, 0);
+            /*check for redirection*/
+			bool redirectionExists = false;
+			const char *invalid_str = ">";
+			char *c = str;
+			while (*c) {
+				if (strchr(invalid_str, *c)) {
+					redirectionExists = true;
+				}
+				c++;
+			}
+			//printf("check excl in batch method -- str is %s ", str);
+			/*if excl command call excl mathod else call split method */
+			if(checkForExcl(str, redirectionExists) == 0) {
+				splitAndExecute(str, redirectionExists);;
+			} else {
+				exit(0);
+			}
         }
         exit(0);
     }
@@ -289,7 +316,6 @@ int splitAndExecute(char *input, bool redirectionExists) {
         char *redirectCopy = redirect_file;
         strtok(redirectCopy, delim);
         if (strtok(NULL, delim) != NULL) {
-
             printError();
         }
         redirection_flag = true;
@@ -309,7 +335,6 @@ int splitAndExecute(char *input, bool redirectionExists) {
             close(STDOUT_FILENO);
             open(redirect_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
         }
-
         execvp(argv[0], argv);
         printError();
         exit(0);
@@ -331,7 +356,7 @@ int main(int argc, char *argv[]) {
     //exit(0);
     while (1) {
         //exit(0);
-        write(STDOUT_FILENO, "mysh# ", strlen("mysh# "));
+        write(STDOUT_FILENO, "mysh # ", strlen("mysh # "));
 
         /*read input given by user*/
         char *input = (char *) malloc(512);
