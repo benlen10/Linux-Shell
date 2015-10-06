@@ -117,7 +117,7 @@ int checkForExcl(char *token, bool redirectionExists) {
         }
         else {
             index = num - counter;
-           //printf("calling split correctly . ln 124 cmd %s", queue[index]);
+            //printf("calling split correctly . ln 124 cmd %s", queue[index]);
             splitAndExecute(queue[index], redirectionExists);
         }
 
@@ -204,9 +204,9 @@ void display() {
     else {
         for (i = front; i <= rear; i++) {
             if (i == rear)
-                printf("\t %d %s", temp++, queue[i]);
+                printf("%d %s", temp++, queue[i]);
             else
-                printf("\t %d %s\n", temp++, queue[i]);
+                printf("%d %s\n", temp++, queue[i]);
         }
     }
     printf("\n");
@@ -246,19 +246,22 @@ void batchMode(int argc, char *argv[]) {
         }
         char *str;
         char * strTrunc = (char*)malloc(512);
+
         size_t size;
         ssize_t chars;
         while ((chars = getline(&str, &size, open)) != -1) {
         	/*if line is greater than 512 bytes then truncate to 512 bytes and execute*/
         	int len = strlen(str);
-
-			if(len>512){
+			if(len>513){
 				strncpy(strTrunc,str,512);
 				strncpy(str,strTrunc,512);
 				str = strTrunc;
 				str[512]='\n';
+			  write(STDOUT_FILENO, str, strlen(str));
+				printError();
+				continue;
 			}
-
+			//printf("writing to stdout %s\n",str);
 			write(STDOUT_FILENO, str, strlen(str));
             checkForExit(str);
             if (str[chars - 1] == '\n') {
@@ -291,6 +294,7 @@ void batchMode(int argc, char *argv[]) {
 int splitAndExecute(char *input, bool redirectionExists) {
 
     /*check for history*/
+	char *histCom = strdup(input);
     char *histIp = strdup(input);
     char *first = strtok(histIp, " \n");
     if (strcmp(first, "history") == 0) {
@@ -319,19 +323,26 @@ int splitAndExecute(char *input, bool redirectionExists) {
     extraRedirect = strtok(NULL, delim1);//if there are more than 2 files after the redirection
     //if there is not file after the redirection
     if(redirectionExists && redirect_file == NULL){
+    	//printf("inserting 322 %s",histCom);
+    	insert(histCom);
     	printError();
     	return 1;
     }
 
     //if there is more than one file after the redirection
     if (extraRedirect != NULL) {
+    	//printf("extra redirect value %s\n",extraRedirect);
+    	//printf("inserting 330 %s",histCom);
+    //	insert(histCom);
         printError();
         return 1;
     }
     if (redirectionExists == false) {
+    	//printf("334 redirection false\n");
         splitBySpace(inputCopy, argv);
     }
     else {
+    	//printf("337 redirection exist\n");
         char delim[4] = " \n";
         char *redirectCopy = redirect_file;
         strtok(redirectCopy, delim);
@@ -339,12 +350,13 @@ int splitAndExecute(char *input, bool redirectionExists) {
             printError();
         }
         redirection_flag = true;
+      //  printf("token--  %s\n",token);
         splitBySpace(token, argv);
     }
 
     /*create new process*/
-
-    insert(input);
+    //printf("inserting 350 %s",histCom);
+    insert(histCom);
     int rc = fork();
 
     if (rc > 0) {
@@ -352,6 +364,7 @@ int splitAndExecute(char *input, bool redirectionExists) {
         wait(&status);//TODO check with status
     } else if (rc == 0) {
         if (redirection_flag == true) {
+        	//printf("358 redirection exist\n");
             close(STDOUT_FILENO);
             int ret = open(redirect_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
             if(ret ==-1){
@@ -359,6 +372,7 @@ int splitAndExecute(char *input, bool redirectionExists) {
             	return 1;
             }
         }
+        //printf("executing this %s",argv[0]);
         execvp(argv[0], argv);
         printError();
         exit(0);
