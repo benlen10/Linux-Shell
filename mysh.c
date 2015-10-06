@@ -118,6 +118,7 @@ int checkForExcl(char *token, bool redirectionExists) {
         else {
             index = num - counter;
             //printf("calling split correctly . ln 124 cmd %s", queue[index]);
+<<<<<<< HEAD
             char *command = queue[index];
             const char *invalid_str = ">";
             char *c = command;
@@ -128,6 +129,8 @@ int checkForExcl(char *token, bool redirectionExists) {
                 c++;
             }
             //printf("calling split correctly .red = %d ln 124 cmd %s", redirectionExists, queue[index]);
+=======
+>>>>>>> 311fb01d2ad07b885d8bb8b49cbe192ee8fa8ba8
             splitAndExecute(queue[index], redirectionExists);
         }
 
