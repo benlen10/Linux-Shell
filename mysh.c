@@ -124,6 +124,10 @@ int checkForExcl(char *token, bool redirectionExists) {
         if (strlen(token) == 1) {
 						/*num will be 0 if the user has enetered only '!' . in this case we need tno execute the last command in the history*/
            num = counter+no_of_rec-1; 
+					 if(front ==-1)  {
+									 printError();
+									 return 1 ;
+						}
         }
 
         if (num < counter) {
@@ -334,7 +338,6 @@ void batchMode(int argc, char *argv[]) {
 }
 
 int splitAndExecute(char *input, bool redirectionExists) {
-
     /*check for history*/
 	char *histCom = strdup(input);
     char *histIp = strdup(input);
@@ -434,8 +437,10 @@ int main(int argc, char *argv[]) {
         if (fgets(input, BUFFER_SIZE, stdin) == NULL) {
             printError();
         }
+				
 				input = trimwhitespace(input);
-        /*check for exit*/
+        if(*input == 0) continue;
+				/*check for exit*/
         checkForExit(input);
 
         /*check for redirection*/
