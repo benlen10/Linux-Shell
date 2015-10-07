@@ -36,9 +36,34 @@ int counter = 1;
 /*
  * TODO exit after all printErrors
  */
-void checkForExit(char *response) {
+char *trimwhitespace(char *str)
+{
+  char *end;
 
-    char exitstr[] = "exit\n";
+  // Trim leading space
+  while(isspace(*str)) str++;
+
+  if(*str == 0)  // All spaces?
+    return str;
+
+  // Trim trailing space
+  end = str + strlen(str) - 1;
+  while(end > str && isspace(*end)) end--;
+
+  // Write new null terminator
+  *(end+1) = 0;
+
+  return str;
+}
+
+void checkForExit(char *response) {
+		//response = trimwhitespace(response);
+		int len = strlen(response);
+/*		if(response[len - 1] != '\n')
+				response[len - 1] = '\n';*/
+    if(response[len - 1] == '\n')
+           response[len - 1] = '\0';
+    char exitstr[] = "exit";
     char *exitptr = exitstr;
     if (strcmp(response, exitptr) == 0) {
         insert("exit");
@@ -57,17 +82,29 @@ int checkForExcl(char *token, bool redirectionExists) {
         char *c = token;
         c++;
         while (*c) {
+						if(isspace(*c)){
+							c++;
+							continue;
+						}
             if (isalpha(*c)) {
                 printError();
                 return 1;
             }
+						if (((*c>0 && *c<=47)||(*c>=58 && *c<=64)||
+										               (*c>=91 && *c<=96)||(*c>=123 && *c<=127))&& !isspace(*c)){
+                printError();
+                return 1;
+						}
             //num = atoi(c);//TODO to calculate actual number
             c++;
         }
         c = token;
-        c++;
+        //c++;
         char *n = (char *) malloc(10 * sizeof(char));
         int i = 0;
+				c++;
+				while(isspace(*c))
+								c++;
         while (isdigit(*c)) {
             n[i] = *c;
             i++;
@@ -75,10 +112,6 @@ int checkForExcl(char *token, bool redirectionExists) {
         }
         num = atoi(n);
 
-        if (strlen(token) == 1) {
-            printError();
-            return 1;
-        }
 
         int no_of_rec = 0;
         if (front > rear) {
@@ -88,9 +121,9 @@ int checkForExcl(char *token, bool redirectionExists) {
             no_of_rec = rear - front + 1;
         }
 
-        /*num will be 0 if the user has enetered only '!' . in this case we need tno execute the last command in the history*/
-        if(num ==0){
-        	num = counter+no_of_rec-1;
+        if (strlen(token) == 1) {
+						/*num will be 0 if the user has enetered only '!' . in this case we need tno execute the last command in the history*/
+           num = counter+no_of_rec-1; 
         }
 
         if (num < counter) {
@@ -279,7 +312,9 @@ void batchMode(int argc, char *argv[]) {
                 --chars;
             }
 
-            /*check for redirection*/
+       str = trimwhitespace(str);
+					  /*check for redirection*/
+			
 			bool redirectionExists = false;
 			const char *invalid_str = ">";
 			char *c = str;
@@ -289,7 +324,6 @@ void batchMode(int argc, char *argv[]) {
 				}
 				c++;
 			}
-			//printf("check excl in batch method -- str is %s ", str);
 			/*if excl command call excl mathod else call split method */
 			if(checkForExcl(str, redirectionExists) == 0) {
 				splitAndExecute(str, redirectionExists);
@@ -331,7 +365,6 @@ int splitAndExecute(char *input, bool redirectionExists) {
     extraRedirect = strtok(NULL, delim1);//if there are more than 2 files after the redirection
     //if there is not file after the redirection
     if(redirectionExists && redirect_file == NULL){
-    	//printf("inserting 322 %s",histCom);
     	insert(histCom);
     	printError();
     	return 1;
@@ -339,18 +372,14 @@ int splitAndExecute(char *input, bool redirectionExists) {
 
     //if there is more than one file after the redirection
     if (extraRedirect != NULL) {
-    	//printf("extra redirect value %s\n",extraRedirect);
-    	//printf("inserting 330 %s",histCom);
     //	insert(histCom);
         printError();
         return 1;
     }
     if (redirectionExists == false) {
-    	//printf("334 redirection false\n");
         splitBySpace(inputCopy, argv);
     }
     else {
-    	//printf("337 redirection exist\n");
         char delim[4] = " \n";
         char *redirectCopy = redirect_file;
         strtok(redirectCopy, delim);
@@ -358,12 +387,10 @@ int splitAndExecute(char *input, bool redirectionExists) {
             printError();
         }
         redirection_flag = true;
-      //  printf("token--  %s\n",token);
         splitBySpace(token, argv);
     }
 
     /*create new process*/
-    //printf("inserting 350 %s",histCom);
     insert(histCom);
     int rc = fork();
 
@@ -372,7 +399,6 @@ int splitAndExecute(char *input, bool redirectionExists) {
         wait(&status);//TODO check with status
     } else if (rc == 0) {
         if (redirection_flag == true) {
-        	//printf("358 redirection exist\n");
             close(STDOUT_FILENO);
             int ret = open(redirect_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
             if(ret ==-1){
@@ -380,7 +406,6 @@ int splitAndExecute(char *input, bool redirectionExists) {
             	return 1;
             }
         }
-        //printf("executing this %s",argv[0]);
         execvp(argv[0], argv);
         printError();
         exit(0);
@@ -409,7 +434,7 @@ int main(int argc, char *argv[]) {
         if (fgets(input, BUFFER_SIZE, stdin) == NULL) {
             printError();
         }
-
+				input = trimwhitespace(input);
         /*check for exit*/
         checkForExit(input);
 
@@ -425,7 +450,7 @@ int main(int argc, char *argv[]) {
         }
 
         /*check for excl*/
-        if (checkForExcl(input, redirectionExists) == 1) {
+			  if (checkForExcl(input, redirectionExists) == 1) {
             continue;
         }
 
